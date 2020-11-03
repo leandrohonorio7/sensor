@@ -1,0 +1,65 @@
+# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP .NET Core service.
+
+version: '3.4'
+
+services:
+  s-app:
+    image: i-app
+    container_name: c-app
+    build:
+      context: ./
+      dockerfile: ./frontend/app-angular/Dockerfile
+    depends_on: 
+      - s-nginx
+    ports:
+      - '4200:4200'
+    command: > 
+      bash -c "npm install && ng serve --host 0.0.0.0 --port 4200"
+  s-nginx:
+    image: i-nginx
+    container_name: c-nginx
+    restart: always
+    build:
+      context: ./
+      dockerfile: ./docker/loadbalance/Dockerfile
+    ports:
+      - 8080:8080
+    depends_on: 
+      - s-api01
+      - s-api02
+  s-api01:
+    image: i-api
+    container_name: c-api01
+    restart: always
+    build:
+      context: ./
+      dockerfile: ./backend/Dockerfile
+    ports: 
+      - 8081:8081
+    depends_on: 
+      - db
+  s-api02:
+    image: i-api
+    container_name: c-api02
+    restart: always
+    build:
+      context: ./
+      dockerfile: ./backend/Dockerfile
+    ports: 
+      - 8082:8082
+    depends_on: 
+      - db
+  db:
+    image: mcr.microsoft.com/mssql/server
+    container_name: c-db
+    environment:
+      SA_PASSWORD: "Password@123"
+      ACCEPT_EULA: "Y"
+    ports:
+      - 1401:1433
+    volumes: 
+      - mssqlsystem:/var/opt/mssql
+      - mssqluser:/var/opt/sqlserver
+volumes:
+  mssqlsystem:
+  mssqluser:
